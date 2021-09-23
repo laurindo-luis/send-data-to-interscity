@@ -3,6 +3,7 @@ package br.ufma.lsdi.smartbins;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -10,6 +11,9 @@ import org.springframework.web.client.RestTemplate;
 @Service
 public class SmartBinsLevelService {
 		
+	@Autowired
+	private SmartBinsLevelRepository smartBinsLevelRepository;
+	
 	public List<SmartBinsLevelField> getSmartBins() {
 		RestTemplate rest = new RestTemplate();
 		ResponseEntity<SmartBinsLevelDto> response = rest.getForEntity("https://data.randwick.nsw.gov.au/api/"
@@ -22,4 +26,9 @@ public class SmartBinsLevelService {
 				.map(record -> SmartBinsLevelField.create(record.getFields()))
 				.collect(Collectors.toList());
 	}
+	
+	public void save(SmartBinsLevelEntity smartBinsLevelEntity) {
+		smartBinsLevelRepository.save(smartBinsLevelEntity);
+	}
+	
 }

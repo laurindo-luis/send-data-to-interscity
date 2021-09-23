@@ -13,5 +13,4 @@ public class SmartBinsLevelDto {
 	public void setRecords(List<Record> records) {
 		this.records = records;
 	}
-	
 }
