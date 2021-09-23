@@ -7,6 +7,10 @@ import br.ufma.lsdi.inserscity.Data;
 public class ResourceDto {
     private Data data;
     
+    public ResourceDto() {
+    	
+    }
+    
     public ResourceDto(String description, List<String> capabilites, String status, 
     		Double lat, Double lon) {
     	data = new Data();

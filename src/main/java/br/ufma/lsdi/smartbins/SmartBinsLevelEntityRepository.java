@@ -4,6 +4,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface SmartBinsLevelRepository extends JpaRepository<SmartBinsLevelEntity, Long> {
-
+public interface SmartBinsLevelEntityRepository extends JpaRepository<SmartBinsLevelEntity, Long> {
+	
+	public SmartBinsLevelEntity findByBinId(String binId);
 }
