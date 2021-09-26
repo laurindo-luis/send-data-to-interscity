@@ -5,15 +5,13 @@ import java.util.stream.Collectors;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 
-import java.util.Arrays;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import br.ufma.lsdi.inserscity.resourceadaptor.ResourceAdaptorService;
-import br.ufma.lsdi.inserscity.resourceadaptor.ResourceDto;
+import br.ufma.lsdi.inserscity.resource.ResourceDto;
+import br.ufma.lsdi.inserscity.resource.adaptor.ResourceAdaptorService;
 
 @Service
 public class SmartBinsLevelService {
@@ -45,21 +43,36 @@ public class SmartBinsLevelService {
 				SmartBinsLevelEntity smartBinsLevelEntity = findByBinId(smartBin.getBinId());
 				if(isNull(smartBinsLevelEntity)) {
 					
-					List<String> capabilities = Arrays.asList("current_fill_level", "battery_health");
 					String[] latLon = smartBin.getLatLong().split(",");
 					Double lat = Double.valueOf(latLon[0]);
 					Double lon = Double.valueOf(latLon[1]);
 					
-					ResourceDto resource = new ResourceDto("A public smart bin", capabilities, "active", 
-							lat, lon);
-					ResourceDto response = resourceAdaptorService.registerNewResource(resource);	
+					ResourceDto resource = new ResourceDto.Builder()
+							.setDescription("A public smart bin")
+							.addCapabilite("current_fill_level")
+							.addCapabilite("battery_health")
+							.setStatus("active")
+							.setLatLon(lat, lon)
+							.build();
 					
-					//Salvar agora no mysql a referência do recurso com Id do InterSCity
-					smartBinsLevelEntity = new SmartBinsLevelEntity();
-					smartBinsLevelEntity.setUuid(response.getData().getUuid());
-					smartBinsLevelEntity.setBinId(smartBin.getBinId());
-					save(smartBinsLevelEntity);
+					ResourceDto response = resourceAdaptorService.registerNewResource(resource);	
+					if(nonNull(response)) {
+						//Salvar agora no mysql a referência do recurso com Id do InterSCity
+						smartBinsLevelEntity = new SmartBinsLevelEntity();
+						smartBinsLevelEntity.setUuid(response.getData().getUuid());
+						smartBinsLevelEntity.setBinId(smartBin.getBinId());
+						save(smartBinsLevelEntity);
+					}
+				}
 				
+				if(nonNull(smartBinsLevelEntity)) {
+					//Cadastrando dados de contexto
+					ResourceDto resource = new ResourceDto.Builder()
+							.addContextData(smartBin.getCurrentFillLevel(), smartBin.getBatteryHealth(),
+									smartBin.getTimesTamp().toString())
+							.build();
+					String uuid = smartBinsLevelEntity.getUuid();
+					resourceAdaptorService.saveContextData(uuid, resource);
 				}
 			}
 			

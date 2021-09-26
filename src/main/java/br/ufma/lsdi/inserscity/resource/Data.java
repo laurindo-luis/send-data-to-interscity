@@ -1,7 +1,11 @@
-package br.ufma.lsdi.inserscity;
+package br.ufma.lsdi.inserscity.resource;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+@JsonInclude(JsonInclude.Include.NON_NULL) 
 public class Data {
     private String uuid;
     private String description;
@@ -13,10 +17,15 @@ public class Data {
     private String state;
     private String city;
     private String neighborhood;
-    private String postal_code;
-    private String created_at;
-    private String updated_at;
+    @JsonProperty("postal_code")
+    private String postalCode;
+    @JsonProperty("created_at")
+    private String createdAt;
+    @JsonProperty("updated_at")
+    private String updatedAt;
     private Integer id;
+    @JsonProperty("environment_monitoring")
+    private List<ContextData> environmentMonitoring;
     
 	public String getUuid() {
 		return uuid;
@@ -97,37 +106,44 @@ public class Data {
 	public void setNeighborhood(String neighborhood) {
 		this.neighborhood = neighborhood;
 	}
-	
-	public String getPostal_code() {
-		return postal_code;
+
+	public String getPostalCode() {
+		return postalCode;
 	}
-	
-	public void setPostal_code(String postal_code) {
-		this.postal_code = postal_code;
+
+	public void setPostalCode(String postalCode) {
+		this.postalCode = postalCode;
 	}
-	
-	public String getCreated_at() {
-		return created_at;
+
+	public String getCreatedAt() {
+		return createdAt;
 	}
-	
-	public void setCreated_at(String created_at) {
-		this.created_at = created_at;
+
+	public void setCreatedAt(String createdAt) {
+		this.createdAt = createdAt;
 	}
-	
-	public String getUpdated_at() {
-		return updated_at;
+
+	public String getUpdatedAt() {
+		return updatedAt;
 	}
-	
-	public void setUpdated_at(String updated_at) {
-		this.updated_at = updated_at;
+
+	public void setUpdatedAt(String updatedAt) {
+		this.updatedAt = updatedAt;
 	}
-	
+
 	public Integer getId() {
 		return id;
 	}
-	
+
 	public void setId(Integer id) {
 		this.id = id;
 	}
-     
+
+	public List<ContextData> getEnvironmentMonitoring() {
+		return environmentMonitoring;
+	}
+
+	public void setEnvironmentMonitoring(List<ContextData> environmentMonitoring) {
+		this.environmentMonitoring = environmentMonitoring;
+	}  
 }
