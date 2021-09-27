@@ -20,7 +20,7 @@ public class SendDataToInterscityApplication {
 	@Autowired
 	private SmartBinsLevelService smartBinsLevelService;
 	
-	Logger logger = LoggerFactory.getLogger(SendDataToInterscityApplication.class);
+	private Logger logger = LoggerFactory.getLogger(SendDataToInterscityApplication.class);
 	
 	public static void main(String[] args) {
 		SpringApplication.run(SendDataToInterscityApplication.class, args);
@@ -32,7 +32,7 @@ public class SendDataToInterscityApplication {
 			if(!smartBinsLevelService.isHasBinsSaved()) 
 				smartBinsLevelService.sendDataToInterSCity();
 			
-			int delay = ((60 - LocalDateTime.now().getMinute()) + 10) * 60000;
+			long delay = ((60 - LocalDateTime.now().getMinute()) + 10) * 60000;
 			long period = 60 * 60000;
 			
 			new Timer().scheduleAtFixedRate(new TimerTask() {
