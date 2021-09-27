@@ -1,9 +1,12 @@
 package br.ufma.lsdi.smartbins;
 
+import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+
+import java.text.SimpleDateFormat;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -68,9 +71,11 @@ public class SmartBinsLevelService {
 				if(nonNull(smartBinsLevelEntity)) {
 					//Cadastrando dados de contexto
 					ResourceDto resource = new ResourceDto.Builder()
-							.addContextData(smartBin.getCurrentFillLevel(), smartBin.getBatteryHealth(),
-									smartBin.getTimesTamp().toString())
-							.build();
+							.addContextData(
+									smartBin.getCurrentFillLevel(), 
+									smartBin.getBatteryHealth(),
+									dateFormatTime(smartBin.getTimesTamp())
+							).build();
 					String uuid = smartBinsLevelEntity.getUuid();
 					resourceAdaptorService.saveContextData(uuid, resource);
 				}
@@ -85,6 +90,12 @@ public class SmartBinsLevelService {
 	
 	public SmartBinsLevelEntity findByBinId(String binId) {
 		return smartBinsLevelEntityRepository.findByBinId(binId);
+	}
+	
+	private String dateFormatTime(Date date) {
+		SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+		String data = format.format(date);
+		return data.replace(" ", "T");
 	}
 	
 }
