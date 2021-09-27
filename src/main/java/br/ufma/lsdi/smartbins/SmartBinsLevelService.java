@@ -38,10 +38,9 @@ public class SmartBinsLevelService {
 				.collect(Collectors.toList());
 	}
 	
-	public void sendDataToInterSCity() {
+	public Boolean sendDataToInterSCity() {
 		List<SmartBinsLevelField> smartBinsLevelFields = getSmartBinsLevel();
-		smartBinsLevelFields.forEach(smartBin -> {
-			
+		for(SmartBinsLevelField smartBin : smartBinsLevelFields) {
 			if(nonNull(smartBin.getLatLong())) {
 				SmartBinsLevelEntity smartBinsLevelEntity = findByBinId(smartBin.getBinId());
 				if(isNull(smartBinsLevelEntity)) {
@@ -59,29 +58,31 @@ public class SmartBinsLevelService {
 							.build();
 					
 					ResourceDto response = resourceAdaptorService.registerNewResource(resource);	
-					if(nonNull(response)) {
-						//Salvar agora no mysql a referência do recurso com Id do InterSCity
-						smartBinsLevelEntity = new SmartBinsLevelEntity();
-						smartBinsLevelEntity.setUuid(response.getData().getUuid());
-						smartBinsLevelEntity.setBinId(smartBin.getBinId());
-						save(smartBinsLevelEntity);
-					}
+					if(isNull(response)) 
+						return false;
+					
+					//Salvar agora no mysql a referência do recurso com Id do InterSCity
+					smartBinsLevelEntity = new SmartBinsLevelEntity();
+					smartBinsLevelEntity.setUuid(response.getData().getUuid());
+					smartBinsLevelEntity.setBinId(smartBin.getBinId());
+					save(smartBinsLevelEntity);
 				}
 				
-				if(nonNull(smartBinsLevelEntity)) {
-					//Cadastrando dados de contexto
-					ResourceDto resource = new ResourceDto.Builder()
-							.addContextData(
-									smartBin.getCurrentFillLevel(), 
-									smartBin.getBatteryHealth(),
-									dateFormatTime(smartBin.getTimesTamp())
-							).build();
-					String uuid = smartBinsLevelEntity.getUuid();
-					resourceAdaptorService.saveContextData(uuid, resource);
-				}
+				//Cadastrando dados de contexto
+				ResourceDto resource = new ResourceDto.Builder()
+						.addContextData(
+								smartBin.getCurrentFillLevel(), 
+								smartBin.getBatteryHealth(),
+								dateFormatTime(smartBin.getTimesTamp())
+						).build();
+				String uuid = smartBinsLevelEntity.getUuid();
+				Boolean status = resourceAdaptorService.saveContextData(uuid, resource);
+				if(!status) 
+					return false;
+				
 			}
-			
-		});
+		}
+		return true;
 	}
 	
 	public void save(SmartBinsLevelEntity smartBinsLevelEntity) {
@@ -90,6 +91,10 @@ public class SmartBinsLevelService {
 	
 	public SmartBinsLevelEntity findByBinId(String binId) {
 		return smartBinsLevelEntityRepository.findByBinId(binId);
+	}
+	
+	public Boolean isHasBinsSaved() {
+		return smartBinsLevelEntityRepository.findAll().size() > 0 ? true : false;
 	}
 	
 	private String dateFormatTime(Date date) {
