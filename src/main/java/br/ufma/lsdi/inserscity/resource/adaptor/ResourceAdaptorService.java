@@ -1,8 +1,9 @@
 package br.ufma.lsdi.inserscity.resource.adaptor;
 
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import br.ufma.lsdi.inserscity.resource.ResourceDto;
@@ -17,7 +18,7 @@ public class ResourceAdaptorService {
 		try {
 			ResponseEntity<ResourceDto> response = rest.postForEntity(url, resource, ResourceDto.class);
 			return response.getStatusCode().value() == 201 ? response.getBody() : null;
-		} catch(ResourceAccessException e) {
+		} catch(RestClientException e) {
 			e.printStackTrace();
 			return null;
 		}
@@ -30,7 +31,7 @@ public class ResourceAdaptorService {
 		try {
 			ResponseEntity<Void> response = rest.postForEntity(url, resource, Void.class);
 			return response.getStatusCode().value() == 201 ? true : false;
-		} catch(ResourceAccessException e) {
+		} catch(RestClientException e) {
 			e.printStackTrace();
 			return false;
 		}
