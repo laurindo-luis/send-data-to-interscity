@@ -1,12 +1,10 @@
-package br.ufma.lsdi.inserscity.resource.adaptor;
+package br.ufma.lsdi.inserscity.resource;
 
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
-
-import br.ufma.lsdi.inserscity.resource.ResourceDto;
 
 @Service
 public class ResourceAdaptorService {

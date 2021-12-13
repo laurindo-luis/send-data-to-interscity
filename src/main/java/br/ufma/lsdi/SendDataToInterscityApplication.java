@@ -29,6 +29,7 @@ public class SendDataToInterscityApplication {
 	@Bean
 	public CommandLineRunner run() {		
 		return args -> {
+			/*
 			if(!smartBinsLevelService.isHasBinsSaved()) 
 				smartBinsLevelService.sendDataToInterSCity();
 			
@@ -42,7 +43,8 @@ public class SendDataToInterscityApplication {
 					else 
 						logger.info("Error sending data to InterSCity!");
 				}
-			}, delay, period);
+			}, delay, period); */
+			smartBinsLevelService.sendDataToInterSCity();
 		};
 	}
 }

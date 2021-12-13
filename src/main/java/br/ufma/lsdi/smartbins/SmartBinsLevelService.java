@@ -1,11 +1,17 @@
 package br.ufma.lsdi.smartbins;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,8 +19,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import br.ufma.lsdi.inserscity.resource.ResourceAdaptorService;
 import br.ufma.lsdi.inserscity.resource.ResourceDto;
-import br.ufma.lsdi.inserscity.resource.adaptor.ResourceAdaptorService;
 
 @Service
 public class SmartBinsLevelService {
@@ -25,7 +31,8 @@ public class SmartBinsLevelService {
 	@Autowired
 	private SmartBinsLevelEntityRepository smartBinsLevelEntityRepository;
 	
-	public List<SmartBinsLevelField> getSmartBinsLevel() {
+	public List<SmartBinLevelField> getSmartBinsLevel() {
+		/*
 		RestTemplate rest = new RestTemplate();
 		ResponseEntity<SmartBinsLevelDto> response = rest.getForEntity("https://data.randwick.nsw.gov.au/api/"
 				+ "records/1.0/search/?dataset=smart-bins-current-level&q=&rows=100&sort=timestamp&"
@@ -34,55 +41,111 @@ public class SmartBinsLevelService {
 		
 		SmartBinsLevelDto smartBinsLevelDto = response.getBody();
 		return smartBinsLevelDto.getRecords().stream()
-				.map(record -> SmartBinsLevelField.create(record.getFields()))
-				.collect(Collectors.toList());
+				.map(record -> SmartBinLevelField.create(record.getFields()))
+				.collect(Collectors.toList()); */
+				
+		return getSmartBinsLevelCSV();
 	}
 	
-	public Boolean sendDataToInterSCity() {
-		List<SmartBinsLevelField> smartBinsLevelFields = getSmartBinsLevel();
-		for(SmartBinsLevelField smartBin : smartBinsLevelFields) {
+	private List<SmartBinLevelField> getSmartBinsLevelCSV() {
+		List<SmartBinLevelField> smartBinsLevel = new ArrayList<>();
+		try {
+			FileReader file = new FileReader("smart_bins.csv");
+			BufferedReader bufferReader = new BufferedReader(file);
+			
+			String line = bufferReader.readLine();
+			while(nonNull(line = bufferReader.readLine())) {
+				String[] values = line.split(";");
+				
+				SmartBinLevelField smartBinsLevelField = new SmartBinLevelField();
+				smartBinsLevelField.setBatteryHealth(Double.valueOf(values[0]));
+				smartBinsLevelField.setBinId(values[1]);
+				smartBinsLevelField.setBinStatus(values[2]);
+				smartBinsLevelField.setCurrentFillLevel(Double.valueOf(values[3]));
+				smartBinsLevelField.setLatLong(values[4]);
+				smartBinsLevelField.setTimesTamp(dateFormartTime(values[5]));
+				
+				smartBinsLevel.add(smartBinsLevelField);
+			}
+		} catch(IOException e) {
+			e.printStackTrace();
+		}
+		return smartBinsLevel;
+	}
+	
+	public Boolean sendDataToInterSCity() {	
+		Boolean flag = false;
+		List<SmartBinLevelField> smartBinsLevelFields = getSmartBinsLevel();
+		for(SmartBinLevelField smartBin : smartBinsLevelFields) {
 			if(nonNull(smartBin.getLatLong())) {
-				SmartBinsLevelEntity smartBinsLevelEntity = findByBinId(smartBin.getBinId());
-				if(isNull(smartBinsLevelEntity)) {
-					
-					String[] latLon = smartBin.getLatLong().split(",");
-					Double lat = Double.valueOf(latLon[0]);
-					Double lon = Double.valueOf(latLon[1]);
-					
-					ResourceDto resource = new ResourceDto.Builder()
-							.setDescription("A public smart bin")
-							.addCapabilite("current_fill_level")
-							.addCapabilite("battery_health")
-							.setStatus("active")
-							.setLatLon(lat, lon)
-							.build();
-					
-					ResourceDto response = resourceAdaptorService.registerNewResource(resource);	
-					if(isNull(response)) 
-						return false;
-					
-					//Salvar agora no mysql a referência do recurso com Id do InterSCity
-					smartBinsLevelEntity = new SmartBinsLevelEntity();
-					smartBinsLevelEntity.setUuid(response.getData().getUuid());
-					smartBinsLevelEntity.setBinId(smartBin.getBinId());
-					save(smartBinsLevelEntity);
+				if(!isRegisteredInterSCity(smartBin)) {
+					registerResourceInterSCity(smartBin);					
 				}
 				
-				//Cadastrando dados de contexto
-				ResourceDto resource = new ResourceDto.Builder()
-						.addContextData(
-								smartBin.getCurrentFillLevel(), 
-								smartBin.getBatteryHealth(),
-								dateFormatTime(smartBin.getTimesTamp())
-						).build();
-				String uuid = smartBinsLevelEntity.getUuid();
-				Boolean status = resourceAdaptorService.saveContextData(uuid, resource);
-				if(!status) 
-					return false;
-				
+				String uuid = getUuidSmartBin(smartBin.getBinId());
+				if(nonNull(uuid))
+					flag = saveContextData(uuid, smartBin);
 			}
 		}
+		return flag;
+	}
+	
+	private Boolean saveContextData(String uuid, SmartBinLevelField smartBin) {		
+		//Cadastrando dados de contexto
+		ResourceDto resource = new ResourceDto.Builder()
+				.addContextData(
+						smartBin.getCurrentFillLevel(), 
+						smartBin.getBatteryHealth(),
+						dateFormatTime(smartBin.getTimesTamp())
+				).build();
+		Boolean status = resourceAdaptorService.saveContextData(uuid, resource);
+		if(!status) 
+			return false;
 		return true;
+	}
+	
+	private String getUuidSmartBin(String binId) {
+		SmartBinsLevelEntity smartBinsLevelEntity = findByBinId(binId);
+		return isNull(smartBinsLevelEntity) ? null : smartBinsLevelEntity.getUuid();
+	}
+	
+	private ResourceDto registerResourceInterSCity(SmartBinLevelField smartBin) {
+		Double[] latLon = getLatLon(smartBin);
+		ResourceDto resource = new ResourceDto.Builder()
+				.setDescription("A public smart bin")
+				.addCapabilite("current_fill_level")
+				.addCapabilite("battery_health")
+				.setStatus("active")
+				.setLatLon(latLon[0], latLon[1])
+				.build();
+		
+		ResourceDto response = resourceAdaptorService.registerNewResource(resource);
+		if(nonNull(response))
+			//Salvar agora no mysql a referência do recurso com Id do InterSCity
+			saveSmartBinReference(response.getData().getUuid(), smartBin.getBinId());
+		return response;
+	}
+	
+	private void saveSmartBinReference(String uuidResource, String idSmartBin) {
+		SmartBinsLevelEntity smartBinsLevelEntity = new SmartBinsLevelEntity();
+		smartBinsLevelEntity.setUuid(uuidResource);
+		smartBinsLevelEntity.setBinId(idSmartBin);
+		save(smartBinsLevelEntity);
+	}
+	
+	private Double[] getLatLon(SmartBinLevelField smartBin) {
+		String[] values = smartBin.getLatLong().split(",");
+	
+		Double lat = Double.valueOf(values[0].trim());
+		Double lon = Double.valueOf(values[1].trim());
+		
+		Double[] latLon = {lat, lon};
+		return latLon;
+	}
+	
+	private Boolean isRegisteredInterSCity(SmartBinLevelField smartBin) {
+		SmartBinsLevelEntity smartBinsLevelEntity = findByBinId(smartBin.getBinId());
+		return nonNull(smartBinsLevelEntity) ? true :  false;
 	}
 	
 	public void save(SmartBinsLevelEntity smartBinsLevelEntity) {
@@ -101,6 +164,16 @@ public class SmartBinsLevelService {
 		SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 		String data = format.format(date);
 		return data.replace(" ", "T");
+	}
+	
+	private Date dateFormartTime(String date) {
+		SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+		try {
+			return format.parse(date);
+		} catch (ParseException e) {
+			e.printStackTrace();
+			return null;
+		}
 	}
 	
 }

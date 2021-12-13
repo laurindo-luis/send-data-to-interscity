@@ -3,7 +3,7 @@ package br.ufma.lsdi.smartbins;
 import java.util.Date;
 import static java.util.Objects.nonNull;
 
-public class SmartBinsLevelField {
+public class SmartBinLevelField {
 	
 	private Long id;
 	private String binId;
@@ -69,8 +69,8 @@ public class SmartBinsLevelField {
 		this.timesTamp = timesTamp;
 	}
 
-	public static SmartBinsLevelField create(Field field) {
-		SmartBinsLevelField smartBinsLevel = new SmartBinsLevelField();
+	public static SmartBinLevelField create(Field field) {
+		SmartBinLevelField smartBinsLevel = new SmartBinLevelField();
 		smartBinsLevel.setBinId(field.getBin_id());
 		smartBinsLevel.setCurrentFillLevel(field.getCurrent_fill_level());
 		smartBinsLevel.setBatteryHealth(field.getBattery_health());
